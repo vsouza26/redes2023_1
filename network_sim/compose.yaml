@@ -2,6 +2,8 @@ version: "3.9"
 services:
   master:
     build: ./master_sim/
+    volumes:
+        - "./master_sim/master.py:/opt/master.py"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     ports: 
