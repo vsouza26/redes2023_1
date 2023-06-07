@@ -1,5 +1,6 @@
 import socket
 from client_socket_module import ClientSocket, ClientSocketError
+from client_socket_module.exceptions_client import ClientExceptions
 import random
 import os
 import argparse
@@ -11,7 +12,7 @@ try:
                         add adiciona arquivo
                         list lista os arquivos já adicionados
                         rem remove arquivos do servidor
-                        recp recupera arquivos do servidor
+                        rec recupera arquivos do servidor
                         mod modifica propriedades de um dos arquivos no servidor""")
     group1 = parser.add_mutually_exclusive_group()
     group1.add_argument("-i", help="""Caminho do arquivo de entrada. Disponível apenas para o comando ADD.""")
@@ -24,12 +25,19 @@ try:
 except ClientSocketError as e:
     print(e)
     exit(1)
-while True:
-    cmd = input('')
-    if cmd == "CLOSE":
-        print("Fechando a conexão")
-        s.shutdown(socket.SHUT_RDWR)
-        s.close()
-        exit(1)
-        
-
+try:
+    if args.comando == "add":
+        s.add(args.i)
+    elif args.comando == "list":
+        s.list()
+    elif args.comando == "rem":
+        s.rem()
+    else:
+        raise ClientExceptions(1)
+except ClientExceptions as e:
+    print(e)
+    exit(1)
+except Exception as e:
+    print("Erro não tratado:")
+    print(e)
+    exit(1)
