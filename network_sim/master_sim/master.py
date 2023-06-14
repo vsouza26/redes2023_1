@@ -6,7 +6,7 @@ try:
     parser.add_argument("--ip", help="Ip da interface em que deve escutar", default="localhost")
     parser.add_argument("--porta", help="Porta em que deve escutar", default=9999)
     args = parser.parse_args()
-    s = ServerSocket(args.ip, int(args.porta))
+    s = ServerSocket(ip=args.ip, porta=int(args.porta))
     s.start_server()
 except ServerSocketError as e:
     print(e)

@@ -10,14 +10,14 @@ try:
     parser.add_argument("porta", help="Porta do servidor master")
     parser.add_argument("comando", help="""Comandos:
                         add adiciona arquivo
-                        list lista os arquivos já adicionados
-                        rem remove arquivos do servidor
+                        list lista os arquivos já adicionados 
+                        rem remove arquivos do servidor  
                         rec recupera arquivos do servidor
                         mod modifica propriedades de um dos arquivos no servidor""")
     group1 = parser.add_mutually_exclusive_group()
     group1.add_argument("-i", help="""Caminho do arquivo de entrada. Disponível apenas para o comando ADD.""")
     group1.add_argument("-o", help="""Caminho do arquivo de saída.""")
-    parser.add_argument("-n", help="""Número de réplicas do arquivo""")
+    parser.add_argument("-n", help="""Número de réplicas do arquivo""", default=1)
     args = parser.parse_args()
     s = ClientSocket(args.ip, int(args.porta))
     s.connect()
@@ -27,7 +27,7 @@ except ClientSocketError as e:
     exit(1)
 try:
     if args.comando == "add":
-        s.add(args.i)
+        s.add(caminho=args.i, num_repl=int(args.n))
     elif args.comando == "list":
         s.list()
     elif args.comando == "rem":

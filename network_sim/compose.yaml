@@ -8,5 +8,13 @@ services:
     tty: true        # docker run -t
     ports: 
       - "8189:8189"
-
-
+  minion:
+    build: ./minion_sim/
+    volumes:
+        - "./minion_sim/:/opt/"
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    depends_on:
+      - master
+    deploy:
+      replicas: 2
