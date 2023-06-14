@@ -126,7 +126,7 @@ class ServerSocket():
         except:
             print('a')
     
-        self.renomear_reglist(TempFileName)
+        self.mudar_reglist(TempFileName)
 
     def rec_cmd(self,c):
         nome_arq = socket_recv_str(c) 
@@ -158,10 +158,10 @@ class ServerSocket():
         except:
             print()
 
-        self.renomear_reglist(TempFileName)
+        self.mudar_reglist(TempFileName)
         
 
-    def renomear_reglist(self, novo_nome:str):
+    def mudar_reglist(self, novo_nome:str):
         self.reg_list.close()
         os.remove('./.registerlist')
         os.rename(novo_nome, './.registerlist')
@@ -185,6 +185,8 @@ class ServerSocket():
                     self.add_minion(c, addr)
                 if fmsg == self._rmcmd:
                     self.rem_cmd(c)
+                if fmsg == self._reccmd:
+                    self.rec_cmd(c)
 
 
 
