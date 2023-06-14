@@ -19,6 +19,7 @@ class MinionSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     _addminioncmd = "9".encode("ascii")
     def __init__(self, ip:str, porta:int, diretorio:str) -> None:
         try:

@@ -32,6 +32,8 @@ try:
         s.list()
     elif args.comando == "rem":
         s.rem()
+    elif args.comando == "rec":
+        s.rec()
     else:
         raise ClientExceptions(1)
 except ClientExceptions as e:

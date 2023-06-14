@@ -1,4 +1,5 @@
 import socket
+import os
 from multiprocessing import Process, Lock,Manager
 from .stream_handler import StreamHandler,StreamType  
 from .stream_handler.stream_socket_utils import * 
@@ -16,6 +17,7 @@ class ServerSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     _addminioncmd = "9".encode("ascii")
     def __init__(self, ip:int, porta:int) -> None:
         self.reg_list = open("./.registerlist", "a+b")
@@ -105,6 +107,69 @@ class ServerSocket():
         hostnameminion = socket_recv_str(c)
         self.minion_list.append((hostnameminion,c))
 
+    def rem_cmd(self,c):
+        nome_arq = socket_recv_str(c) 
+        if not self.existe_em_registro(nome_arq):
+            self.close_connection(c)
+            return
+        self.remover_registro()
+
+    def remover_registro(self, nome_arq:str, decoder:str = 'ascii'):
+        try:
+            TempFileName = 'temp.txt'
+            self.reg_list.seek(0)
+            with open(TempFileName, 'wb') as TempFile:
+                for line in self.reg_list:
+                    nome_registro = line.decode(decoder).split(",")[0]
+                    if nome_registro != nome_arq:
+                        TempFile.write(line)
+        except:
+            print('a')
+    
+        self.renomear_reglist(TempFileName)
+
+    def rec_cmd(self,c):
+        nome_arq = socket_recv_str(c) 
+        if not self.existe_em_registro(nome_arq):
+            self.close_connection(c)
+            return
+        self.remover_copia_registro(nome_arq)
+
+    
+    def remover_copia_registro(self, nome_arq:str, encoder:str = 'ascii'):
+        try:
+            TempFileName = './temp.txt'
+            self.reg_list.seek(0)
+            with open(TempFileName, 'wb') as TempFile:
+
+                for line in self.reg_list:
+                    line_Lista = line.decode(encoder).split(",")
+                    nome_registro = line_Lista[0]
+                    if nome_registro == nome_arq:
+
+                        if self.Enviar_Client():
+                            if len(line_Lista) <= 3: # "remove" ele
+                                continue
+                            else:
+                                NewLine = ','.join(line_Lista[:len(line_Lista)-2])
+                                TempFile.write(NewLine.encode(encoder))
+                    else :
+                        TempFile.write(line)
+        except:
+            print()
+
+        self.renomear_reglist(TempFileName)
+        
+
+    def renomear_reglist(self, novo_nome:str):
+        self.reg_list.close()
+        os.remove('./.registerlist')
+        os.rename(novo_nome, './.registerlist')
+        self.reg_list = open("./.registerlist", "a+b")
+
+    def Enviar_Client():
+        print("Enviar_Client to-do")
+
     def start_server(self):
         self.s.listen(0)
         with Manager() as manager:
@@ -118,6 +183,8 @@ class ServerSocket():
                     self.add_cmd(c)
                 if fmsg == self._addminioncmd:
                     self.add_minion(c, addr)
+                if fmsg == self._rmcmd:
+                    self.rem_cmd(c)
 
 
 
