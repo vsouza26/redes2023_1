@@ -147,11 +147,13 @@ class ServerSocket():
                     nome_registro = line_Lista[0]
                     if nome_registro == nome_arq:
 
-                        if self.Enviar_Client():
+                        if self.Enviar_Client(nome_registro,line_Lista[len(line_Lista)-2]):
+                            self.RemoveFile(nome_registro,line_Lista[len(line_Lista)-2])
                             if len(line_Lista) <= 3: # "remove" ele
                                 continue
                             else:
                                 NewLine = ','.join(line_Lista[:len(line_Lista)-2])
+                                NewLine = NewLine + ",\n"
                                 TempFile.write(NewLine.encode(encoder))
                     else :
                         TempFile.write(line)
@@ -167,8 +169,25 @@ class ServerSocket():
         os.rename(novo_nome, './.registerlist')
         self.reg_list = open("./.registerlist", "a+b")
 
-    def Enviar_Client():
-        print("Enviar_Client to-do")
+    def Enviar_Client(self, FileName, MinionName, encoder = 'ascii'):
+        FileNamesEncoded = FileName.encode(encoder)
+        Message = [self._reccmd,len(FileNamesEncoded),FileNamesEncoded]
+
+        self.GetFileFromMinion(FileNamesEncoded,Message)
+
+
+
+    def RemoveFile(self, FileName, MinionName, encoder = 'ascii'):
+        MinionSocket = [item for item in self.minion_list if item[0] == MinionName][0][1]
+        FileNamesEncoded = FileName.encode(encoder)
+        Message = [self._rmcmd,len(FileNamesEncoded),FileNamesEncoded]
+
+        p = Process(target=self.send_header_to_minion, args=(Message,MinionSocket))
+        p.start()
+        p.join()
+
+    def GetFileFromMinion(self):
+        print()
 
     def start_server(self):
         self.s.listen(0)
