@@ -24,8 +24,8 @@ class ClientSocket():
             raise ClientSocketError(1)
     
     def shtdnw_close(self):
-        s.shutdown(socket.SHUT_RDWR)
-        s.close()
+        self.s.shutdown(socket.SHUT_RDWR)
+        self.s.close()
 
     def add(self, caminho:str, num_repl:int) -> None:
         self.s.send(self._addcmd)
