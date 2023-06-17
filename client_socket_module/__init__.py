@@ -41,5 +41,12 @@ class ClientSocket():
         self.s.shutdown(socket.SHUT_RDWR)
         self.s.close()
 
-
+    def list(self):
+        self.s.send(self._listcmd)
+        lista = []
+        tam_lista = socket_rect_int(self.s)
+        for i in range(0,tam_lista):
+            lista.append(socket_recv_str(self.s))
+        print(lista)
+        self.shtdnw_close()
 

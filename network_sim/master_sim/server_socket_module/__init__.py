@@ -101,6 +101,15 @@ class ServerSocket():
                 for (hs,m) in servers_list:
                     p.join()
 
+    def list_cmd(self, c:socket):
+        self.reg_list.seek(0)
+        lista_reg = self.reg_list.read()
+        lista_reg = lista_reg.splitlines()
+        socket_send_int(len(lista_reg))
+        for linha in lista_reg:
+            socket_send_str(c, linha)
+        self.reg_list.seek(0)
+    
     def add_minion(self, c:socket, addr):
         hostnameminion = socket_recv_str(c)
         self.minion_list.append((hostnameminion,c))
@@ -118,6 +127,8 @@ class ServerSocket():
                     self.add_cmd(c)
                 if fmsg == self._addminioncmd:
                     self.add_minion(c, addr)
+                if fmsg == self._listcmd:
+                    self.list_cmd(c)
 
 
 
