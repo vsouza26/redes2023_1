@@ -43,11 +43,11 @@ class ClientSocket():
         self.s.close()
     
     def rem(self, nome):
-        self.s.send(self._addcmd)
+        self.s.send(self._rmcmd)
         socket_send_str(self.s, nome)
 
     def rec(self, nome):
-        self.s.send(self._addcmd)
+        self.s.send(self._reccmd)
         socket_send_str(self.s, nome)
 
 
