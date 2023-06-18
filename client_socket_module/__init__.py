@@ -50,3 +50,14 @@ class ClientSocket():
         print(lista)
         self.shtdnw_close()
 
+    def mod(self, caminho:str, num_repl:int) -> None:
+        self.s.send(self._modcmd)
+        nome_arq = caminho.split("/")[-1]
+        socket_send_str(self.s, nome_arq)
+        socket_send_int(self.s, num_repl)
+        response = self.s.recv(1024).decode("ascii")
+        if response == "OK":
+            print("File modification successful.")
+        else:
+            print("File modification failed.")
+        self.shtdnw_close()

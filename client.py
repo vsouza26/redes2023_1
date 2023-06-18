@@ -32,6 +32,8 @@ try:
         s.list()
     elif args.comando == "rem":
         s.rem()
+    elif args.comando == "mod":
+        s.mod(caminho=args.i, num_repl=int(args.n))
     else:
         raise ClientExceptions(1)
 except ClientExceptions as e:

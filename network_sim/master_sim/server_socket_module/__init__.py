@@ -109,6 +109,26 @@ class ServerSocket():
         for linha in lista_reg:
             socket_send_str(c, linha)
         self.reg_list.seek(0)
+
+    def mod_cmd(self, c:socket):
+        nome_arq = socket_recv_str(c)
+        num_repl = socket_rect_int(c)
+        minion_msg = [self._modcmd]
+        minion_msg.append(nome_arq)
+        minion_msg.append(num_repl)
+
+        if not self.existe_em_registro(nome_arq):
+            self.close_connection(c)
+            return
+
+        
+        # Modify the number of replicas for the file in the registry
+        #self.update_num_repl_in_registry(nome_arq, num_repl)
+
+        # Send acknowledgment to the client
+        c.send("OK".encode("ascii"))
+
+        self.close_connection(c)
     
     def add_minion(self, c:socket, addr):
         hostnameminion = socket_recv_str(c)
@@ -129,6 +149,8 @@ class ServerSocket():
                     self.add_minion(c, addr)
                 if fmsg == self._listcmd:
                     self.list_cmd(c)
+                if fmsg == self._modcmd:
+                    self.mod_cmd(c)
 
 
 
