@@ -1,4 +1,5 @@
 import socket
+import os
 from multiprocessing import Process, Lock,Manager
 from .stream_handler import StreamHandler,StreamType  
 from .stream_handler.stream_socket_utils import * 
@@ -16,6 +17,7 @@ class ServerSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     _addminioncmd = "9".encode("ascii")
     def __init__(self, ip:int, porta:int) -> None:
         self.reg_list = open("./.registerlist", "a+b")
@@ -134,6 +136,88 @@ class ServerSocket():
         hostnameminion = socket_recv_str(c)
         self.minion_list.append((hostnameminion,c))
 
+    def rem_cmd(self,c):
+        nome_arq = socket_recv_str(c) 
+        if not self.existe_em_registro(nome_arq):
+            self.close_connection(c)
+            return
+        self.remover_registro()
+
+    def remover_registro(self, nome_arq:str, decoder:str = 'ascii'):
+        try:
+            TempFileName = 'temp.txt'
+            self.reg_list.seek(0)
+            with open(TempFileName, 'wb') as TempFile:
+                for line in self.reg_list:
+                    nome_registro = line.decode(decoder).split(",")[0]
+                    if nome_registro != nome_arq:
+                        TempFile.write(line)
+        except:
+            print('a')
+    
+        self.mudar_reglist(TempFileName)
+
+    def rec_cmd(self,c):
+        nome_arq = socket_recv_str(c) 
+        if not self.existe_em_registro(nome_arq):
+            self.close_connection(c)
+            return
+        self.remover_copia_registro(nome_arq)
+
+    
+    def remover_copia_registro(self, nome_arq:str, encoder:str = 'ascii'):
+        try:
+            TempFileName = './temp.txt'
+            self.reg_list.seek(0)
+            with open(TempFileName, 'wb') as TempFile:
+
+                for line in self.reg_list:
+                    line_Lista = line.decode(encoder).split(",")
+                    nome_registro = line_Lista[0]
+                    if nome_registro == nome_arq:
+
+                        if self.Enviar_Client(nome_registro,line_Lista[len(line_Lista)-2]):
+                            self.RemoveFile(nome_registro,line_Lista[len(line_Lista)-2])
+                            if len(line_Lista) <= 3: # "remove" ele
+                                continue
+                            else:
+                                NewLine = ','.join(line_Lista[:len(line_Lista)-2])
+                                NewLine = NewLine + ",\n"
+                                TempFile.write(NewLine.encode(encoder))
+                    else :
+                        TempFile.write(line)
+        except:
+            print()
+
+        self.mudar_reglist(TempFileName)
+        
+
+    def mudar_reglist(self, novo_nome:str):
+        self.reg_list.close()
+        os.remove('./.registerlist')
+        os.rename(novo_nome, './.registerlist')
+        self.reg_list = open("./.registerlist", "a+b")
+
+    def Enviar_Client(self, FileName, MinionName, encoder = 'ascii'):
+        FileNamesEncoded = FileName.encode(encoder)
+        Message = [self._reccmd,len(FileNamesEncoded),FileNamesEncoded]
+
+        self.GetFileFromMinion(FileNamesEncoded,Message)
+
+
+
+    def RemoveFile(self, FileName, MinionName, encoder = 'ascii'):
+        MinionSocket = [item for item in self.minion_list if item[0] == MinionName][0][1]
+        FileNamesEncoded = FileName.encode(encoder)
+        Message = [self._rmcmd,len(FileNamesEncoded),FileNamesEncoded]
+
+        p = Process(target=self.send_header_to_minion, args=(Message,MinionSocket))
+        p.start()
+        p.join()
+
+    def GetFileFromMinion(self):
+        print()
+
     def start_server(self):
         self.s.listen(0)
         with Manager() as manager:
@@ -151,6 +235,10 @@ class ServerSocket():
                     self.list_cmd(c)
                 if fmsg == self._modcmd:
                     self.mod_cmd(c)
+                if fmsg == self._rmcmd:
+                    self.rem_cmd(c)
+                if fmsg == self._reccmd:
+                    self.rec_cmd(c)
 
 
 

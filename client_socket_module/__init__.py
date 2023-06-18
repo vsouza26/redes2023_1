@@ -13,6 +13,7 @@ class ClientSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     def __init__(self, ip:int, port:int) -> None: 
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.addr = (ip,port)
@@ -40,6 +41,9 @@ class ClientSocket():
             self.s.send(streamFile.send_next(i))
         self.s.shutdown(socket.SHUT_RDWR)
         self.s.close()
+    
+    def rem():
+        print("rem to-do")
 
     def list(self):
         self.s.send(self._listcmd)
@@ -49,6 +53,8 @@ class ClientSocket():
             lista.append(socket_recv_str(self.s))
         print(lista)
         self.shtdnw_close()
+    def rec():
+        print("rec to-do")
 
     def mod(self, caminho:str, num_repl:int) -> None:
         self.s.send(self._modcmd)
