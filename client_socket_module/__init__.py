@@ -46,7 +46,9 @@ class ClientSocket():
         self.s.send(self._addcmd)
         socket_send_str(self.s, nome)
 
-    def rec():
-        print("rec to-do")
+    def rec(self, nome):
+        self.s.send(self._addcmd)
+        socket_send_str(self.s, nome)
+
 
 

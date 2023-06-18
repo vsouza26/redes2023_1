@@ -33,7 +33,7 @@ try:
     elif args.comando == "rem":
         s.rem(caminho = args.i)
     elif args.comando == "rec":
-        s.rec()
+        s.rec(caminho = args.i)
     else:
         raise ClientExceptions(1)
 except ClientExceptions as e:
