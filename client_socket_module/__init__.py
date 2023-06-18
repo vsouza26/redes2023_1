@@ -42,8 +42,9 @@ class ClientSocket():
         self.s.shutdown(socket.SHUT_RDWR)
         self.s.close()
     
-    def rem():
-        print("rem to-do")
+    def rem(self, nome):
+        self.s.send(self._addcmd)
+        socket_send_str(self.s, nome)
 
     def rec():
         print("rec to-do")
