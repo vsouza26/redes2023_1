@@ -20,7 +20,10 @@ class ServerSocket():
     _reccmd = "4".encode("ascii")
     _addminioncmd = "9".encode("ascii")
     def __init__(self, ip:int, porta:int) -> None:
-        self.reg_list = open("./.registerlist", "a+b")
+        try:
+            self.reg_list = open("./.registerlist", "r+b")
+        except FileNotFoundError:
+            self.reg_list = open("./.registerlist", "w+b")
         self.s = socket.create_server((ip,porta), family=socket.AF_INET)
         self.num_repl = 0 
         self.round_robin = 0
@@ -30,6 +33,7 @@ class ServerSocket():
         c.close()
 
     def send_header_to_minion(self, header, m:socket):
+        print(f"Enviando header para socket {m}")
         for msg in header:
             if type(msg) is str:
                 socket_send_str(m, msg)
@@ -49,14 +53,33 @@ class ServerSocket():
         for line in self.reg_list:
             nome_arq = line.decode(decoder).split(",")[0]
             if chave == nome_arq:
+                print(line)
                 return True
         return False
         
+    def existe_em_registro_e_minion_online(self, chave:str, decoder:str = 'ascii'):
+        self.reg_list.seek(0)
+        hosts_online = [i for i in self.minion_list]
+        for line in self.reg_list:
+            linha_decode = line.decode(decoder).split(",")
+            nome_arq = linha_decode[0]
+            print(f"Chave: {chave} nome_arq: {nome_arq}")
+            if chave == nome_arq:
+                for host in hosts_online:
+                    for host_arq in linha_decode:
+                        if host[0] == host_arq:
+                            return host[1]
+        return False
 
     def add_cmd(self,c):
         nome_arq = socket_recv_str(c) 
-        if self.existe_em_registro(nome_arq):
+        if len(self.minion_list) == 0:
+            print("Sem minions disponíveis")
             self.close_connection(c)
+            return
+        if self.existe_em_registro_e_minion_online(nome_arq):
+            self.close_connection(c)
+            print("Existe em registro")
             return
         tam_arq = socket_rect_int(c)
         num_repl = socket_rect_int(c)
@@ -70,6 +93,7 @@ class ServerSocket():
             for (hs,m) in self.minion_list:
                 registro = registro + hs + ","
             registro = registro + "\n"
+            self.reg_list.seek(0, 2)
             self.reg_list.write(registro.encode('ascii'))
             for p in process_list:
                 p.start()
@@ -85,7 +109,10 @@ class ServerSocket():
                 for p in process_list:
                     p.join()
         else:
-            servers_list = [self.minion_list[i%len(self.minion_list)] for i in range(self.round_robin, num_repl)] 
+            servers_list = [] 
+            for i in range(0,num_repl):
+                servers_list.append(self.minion_list[self.round_robin])
+                self.round_robin = (self.round_robin + 1)%len(self.minion_list)
             registro = f"{nome_arq},"
             for (hs,m) in servers_list:
                 registro = registro + hs + ","
@@ -98,7 +125,7 @@ class ServerSocket():
             for j in pipe:
                 msg = c.recv(j)
                 for (hs,m) in servers_list:
-                    p = Process(target=self.send_to_minion, args=(minion_msg,m))
+                    p = Process(target=self.send_to_minion, args=(msg,m))
                     p.start()
                 for (hs,m) in servers_list:
                     p.join()
@@ -159,36 +186,37 @@ class ServerSocket():
 
     def rec_cmd(self,c):
         nome_arq = socket_recv_str(c) 
-        if not self.existe_em_registro(nome_arq):
-            self.close_connection(c)
-            return
-        self.remover_copia_registro(nome_arq)
+        minion_socket = self.existe_em_registro_e_minion_online(nome_arq)
+        print(minion_socket)
+        if minion_socket:
+            header_msg = [self._reccmd,nome_arq]
+            self.send_header_to_minion(header_msg, minion_socket)
+            tam = socket_rect_int(minion_socket)
+            socket_send_int(c, tam)
+            sh = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam)
+            for i in sh:
+                c.send(minion_socket.recv(i))
+            #remover_copia_registro(nome_arq, minion_socket)
 
-    
-    def remover_copia_registro(self, nome_arq:str, encoder:str = 'ascii'):
-        try:
-            TempFileName = './temp.txt'
-            self.reg_list.seek(0)
-            with open(TempFileName, 'wb') as TempFile:
-
-                for line in self.reg_list:
-                    line_Lista = line.decode(encoder).split(",")
-                    nome_registro = line_Lista[0]
-                    if nome_registro == nome_arq:
-
-                        if self.Enviar_Client(nome_registro,line_Lista[len(line_Lista)-2]):
-                            self.RemoveFile(nome_registro,line_Lista[len(line_Lista)-2])
-                            if len(line_Lista) <= 3: # "remove" ele
-                                continue
-                            else:
-                                NewLine = ','.join(line_Lista[:len(line_Lista)-2])
-                                NewLine = NewLine + ",\n"
-                                TempFile.write(NewLine.encode(encoder))
-                    else :
-                        TempFile.write(line)
-        except:
-            print()
-
+   
+    def remover_copia_registro(self, nome_arq:str, minion_socket:socket, encoder:str = 'ascii'):
+        TempFileName = './temp.txt'
+        self.reg_list.seek(0)
+        with open(TempFileName, 'wb') as TempFile:
+            for line in self.reg_list:
+                line_Lista = line.decode(encoder).split(",")
+                nome_registro = line_Lista[0]
+                if nome_registro == nome_arq:
+                    if self.Enviar_Client(nome_registro,line_Lista[len(line_Lista)-2]):
+                        self.RemoveFile(nome_registro,line_Lista[len(line_Lista)-2])
+                        if len(line_Lista) <= 3: # "remove" ele
+                            continue
+                        else:
+                            NewLine = ','.join(line_Lista[:len(line_Lista)-2])
+                            NewLine = NewLine + ",\n"
+                            TempFile.write(NewLine.encode(encoder))
+                else :
+                    TempFile.write(line)
         self.mudar_reglist(TempFileName)
         
 
@@ -198,13 +226,10 @@ class ServerSocket():
         os.rename(novo_nome, './.registerlist')
         self.reg_list = open("./.registerlist", "a+b")
 
-    def Enviar_Client(self, FileName, MinionName, encoder = 'ascii'):
+    def Enviar_Client(self, nome_arq:str, minion_socket:socket):
         FileNamesEncoded = FileName.encode(encoder)
-        Message = [self._reccmd,len(FileNamesEncoded),FileNamesEncoded]
-
-        self.GetFileFromMinion(FileNamesEncoded,Message)
-
-
+        msg = [self._reccmd,len(FileNamesEncoded),FileNamesEncoded]
+        self.send_header_to_minion(msg, m)
 
     def RemoveFile(self, FileName, MinionName, encoder = 'ascii'):
         MinionSocket = [item for item in self.minion_list if item[0] == MinionName][0][1]

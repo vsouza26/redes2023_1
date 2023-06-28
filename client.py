@@ -14,9 +14,8 @@ try:
                         rem remove arquivos do servidor  
                         rec recupera arquivos do servidor
                         mod modifica propriedades de um dos arquivos no servidor""")
-    group1 = parser.add_mutually_exclusive_group()
-    group1.add_argument("-i", help="""Caminho do arquivo de entrada caso seja o comando ADD. Se for comando REM ou REC é o nome do arquivo a ser removido ou recuperado respectivamente""")
-    group1.add_argument("-o", help="""Caminho do arquivo de saída.""")
+    parser.add_argument("-i", help="""Caminho do arquivo de entrada caso seja o comando ADD. Se for comando REM ou REC é o nome do arquivo a ser removido ou recuperado respectivamente""")
+    parser.add_argument("-o", help="""Caminho do arquivo de saída.""")
     parser.add_argument("-n", help="""Número de réplicas do arquivo""", default=1)
     args = parser.parse_args()
     s = ClientSocket(args.ip, int(args.porta))
@@ -35,7 +34,7 @@ try:
     elif args.comando == "mod":
         s.mod(caminho=args.i, num_repl=int(args.n))
     elif args.comando == "rec":
-        s.rec(caminho = args.i)
+        s.rec(nome=args.i, saida=args.o)
     else:
         raise ClientExceptions(1)
 except ClientExceptions as e:
