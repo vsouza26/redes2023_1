@@ -1,4 +1,5 @@
 import socket
+import os
 from multiprocessing import Process  
 from .stream_handler import StreamHandler,StreamType,StreamError
 from .stream_handler.stream_socket_utils import * 
@@ -19,10 +20,11 @@ class MinionSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     _addminioncmd = "9".encode("ascii")
     def __init__(self, ip:str, porta:int, diretorio:str) -> None:
         try:
-            os.mkdir(f"./{diretorio}")
+            os.mkdir(f"./.{diretorio}")
         except FileExistsError as e:
             pass
         except Exception as e:
@@ -39,7 +41,7 @@ class MinionSocket():
         try:
             nome_arq = socket_recv_str(self.c)
             tam_arq = socket_rect_int(self.c) 
-            consumer = StreamHandler(caminho=f"./{self.diretorio}/{nome_arq}",streamType=StreamType.Consumer, tam_arq=tam_arq)
+            consumer = StreamHandler(caminho=f"./.{self.diretorio}/{nome_arq}",streamType=StreamType.Consumer, tam_arq=tam_arq)
             print(f"Tamanho do arquivo: {tam_arq}\nNome do arquivo: {nome_arq}")
             for i in consumer:
                 msg = self.c.recv(i)
@@ -51,7 +53,6 @@ class MinionSocket():
     def start_connection(self) -> None:
         self.c.send(self._addminioncmd)
         socket_send_str(self.c, socket.gethostname())
-        
 
     def handle_command(self) -> None:
         while True:
@@ -60,6 +61,12 @@ class MinionSocket():
                 if cmd == self._addcmd:
                     print("add comando recebido")
                     self.add_cmd()
+                elif cmd == self._rmcmd:
+                    print("remove command received")
+                    self.RemoveCommand()
+                elif cmd == self._reccmd:
+                    print("Comando de recuperar recebido")
+                    self.rec_cmd()
                 else:
                     raise MinionSocketError(2)
             except MinionSocketError as e:
@@ -69,10 +76,26 @@ class MinionSocket():
     def connect_to_master(self):
         self.c.connect(self.addr)
         self.start_connection()
+        print("Conexão com master")
         try:
             self.handle_command()
         except MinionSocketError as e:
             raise e
+   
+    def rec_cmd(self):
+        nome_arq = socket_recv_str(self.c)
+        sh = StreamHandler(caminho=f"./.{self.diretorio}/{nome_arq}", streamType=StreamType.Generator)
+        socket_send_int(self.c, sh.fileSize)
+        for i in sh:
+            self.c.send(sh.send_next(i))
+
+    def RemoveCommand(self):
+        try:
+            nome_arq = socket_recv_str(self.c)
+            os.remove(f'./.{self.diretorio}/{nome_arq}')
+        except:
+            print("deu merda aqui")
+
 
 
 

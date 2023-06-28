@@ -13,6 +13,7 @@ class ClientSocket():
     _listcmd = "1".encode("ascii")
     _modcmd = "2".encode("ascii")
     _rmcmd = "3".encode("ascii")
+    _reccmd = "4".encode("ascii")
     def __init__(self, ip:int, port:int) -> None: 
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.addr = (ip,port)
@@ -38,8 +39,20 @@ class ClientSocket():
         socket_send_int(self.s, num_repl)
         for i in streamFile:
             self.s.send(streamFile.send_next(i))
-        self.s.shutdown(socket.SHUT_RDWR)
-        self.s.close()
+        self.shtdnw_close()
+
+    def rem(self, nome):
+        self.s.send(self._rmcmd)
+        socket_send_str(self.s, nome)
+
+    def rec(self, nome, saida):
+        self.s.send(self._reccmd)
+        socket_send_str(self.s, nome)
+        tam = socket_rect_int(self.s)
+        sh =  StreamHandler(caminho=saida, tam_arq=tam, streamType=StreamType.Consumer)
+        for i in sh:
+            sh.consume_next(self.s.recv(i), i)
+        self.shtdnw_close()
 
     def list(self):
         self.s.send(self._listcmd)
