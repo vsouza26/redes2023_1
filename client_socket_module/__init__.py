@@ -49,6 +49,9 @@ class ClientSocket():
         self.s.send(self._reccmd)
         socket_send_str(self.s, nome)
         tam = socket_rect_int(self.s)
+        if(not tam):
+            print("Arquivo não encontrado")
+            return
         sh =  StreamHandler(caminho=saida, tam_arq=tam, streamType=StreamType.Consumer)
         for i in sh:
             sh.consume_next(self.s.recv(i), i)

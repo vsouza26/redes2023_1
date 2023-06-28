@@ -26,12 +26,21 @@ except ClientSocketError as e:
     exit(1)
 try:
     if args.comando == "add":
+        if(not args.i):
+            print("add malformado digite python3 client.py -h para ajuda.")
+            exit(1)
         s.add(caminho=args.i, num_repl=int(args.n))
     elif args.comando == "list":
         s.list()
     elif args.comando == "rem":
+        if(not args.i):
+            print("remover malformado digite python3 client.py -h para ajuda.")
+            exit(1)
         s.rem(caminho = args.i)
     elif args.comando == "rec":
+        if(not args.o or not args.i):
+            print("recuperar malformado digite python3 client.py -h para ajuda.")
+            exit(1) 
         s.rec(nome=args.i, saida=args.o)
     else:
         raise ClientExceptions(1)
