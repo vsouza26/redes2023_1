@@ -36,7 +36,7 @@ try:
         if(not args.i):
             print("remover malformado digite python3 client.py -h para ajuda.")
             exit(1)
-        s.rem(caminho = args.i)
+        s.rem(nome = args.i)
     elif args.comando == "rec":
         if(not args.o or not args.i):
             print("recuperar malformado digite python3 client.py -h para ajuda.")

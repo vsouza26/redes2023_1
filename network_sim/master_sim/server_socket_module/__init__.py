@@ -149,7 +149,7 @@ class ServerSocket():
         if not self.existe_em_registro(nome_arq):
             self.close_connection(c)
             return
-        self.remover_registro()
+        self.remover_registro(nome_arq)
 
     def remover_registro(self, nome_arq:str, decoder:str = 'ascii'):
         try:
