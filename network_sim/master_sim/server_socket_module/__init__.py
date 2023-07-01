@@ -182,7 +182,7 @@ class ServerSocket():
             self.RemoveFile(nome_arq, minion_name)
             for i in sh:
                 c.send(minion_socket.recv(i))
-            #self.remover_copia_registro(nome_arq, minion_name)
+            self.remover_copia_registroF(nome_arq)
 
    
     def remover_copia_registro(self, nome_arq:str, minion_name:str, encoder:str = 'ascii'):
@@ -200,7 +200,26 @@ class ServerSocket():
                 self.reg_list.write(new_line.encode('ascii'))
                 return
 
-        
+    def remover_copia_registroF(self, nome_arq:str, encoder:str = 'ascii'):
+        try:
+            TempFileName = './temp.txt'
+            self.reg_list.seek(0)
+            with open(TempFileName, 'wb') as TempFile:
+
+                for line in self.reg_list:
+                    line_Lista = line.decode(encoder).split(",")
+                    nome_registro = line_Lista[0]
+                    if nome_registro == nome_arq:
+                        if len(line_Lista) <= 3: # "remove" ele
+                            continue
+                        else:
+                            NewLine = ','.join(line_Lista[:len(line_Lista)-2])
+                            TempFile.write(NewLine.encode(encoder))
+                    else :
+                        TempFile.write(line)
+        except:
+            print()
+        self.mudar_reglist(TempFileName)
 
     def mudar_reglist(self, novo_nome:str):
         self.reg_list.close()
