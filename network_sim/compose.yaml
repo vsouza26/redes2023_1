@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   master:
+    container_name: "master"
     build: ./master_sim/
     volumes:
         - "./master_sim/:/opt/"

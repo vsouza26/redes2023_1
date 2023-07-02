@@ -66,3 +66,11 @@ class ClientSocket():
         print(lista)
         self.shtdnw_close()
 
+    def mod(self, caminho:str, num_repl:int):
+        
+        self.s.send(self._modcmd)
+        nome_arq = caminho.split("/")[-1]
+        self.rem(nome_arq)
+        self.add(caminho,num_repl)
+        
+

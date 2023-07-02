@@ -17,6 +17,7 @@ try:
     parser.add_argument("-i", help="""Caminho do arquivo de entrada caso seja o comando ADD. Se for comando REM ou REC é o nome do arquivo a ser removido ou recuperado respectivamente""")
     parser.add_argument("-o", help="""Caminho do arquivo de saída.""")
     parser.add_argument("-n", help="""Número de réplicas do arquivo""", default=1)
+    #parser.add_argument("-t", help="""Tipo da operação de modificação""", default="add")
     args = parser.parse_args()
     s = ClientSocket(args.ip, int(args.porta))
     s.connect()
@@ -42,6 +43,11 @@ try:
             print("recuperar malformado digite python3 client.py -h para ajuda.")
             exit(1) 
         s.rec(nome=args.i, saida=args.o)
+    elif args.comando == "mod":
+        if(not args.i):
+            print("modificar malformado digite python3 client.py -h para ajuda.")
+            exit(1) 
+        s.mod(caminho=args.i, num_repl=int(args.n))
     else:
         raise ClientExceptions(1)
 except ClientExceptions as e:
