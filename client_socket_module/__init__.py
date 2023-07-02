@@ -66,11 +66,21 @@ class ClientSocket():
         print(lista)
         self.shtdnw_close()
 
-    def mod(self, caminho:str, num_repl:int):
+    def mod(self, caminho:str, num_repl:int=1):
         
         self.s.send(self._modcmd)
+        streamFile = StreamHandler(streamType=StreamType.Generator, caminho=caminho)
         nome_arq = caminho.split("/")[-1]
-        self.rem(nome_arq)
-        self.add(caminho,num_repl)
+        print(caminho)
+        print(streamFile.fileSize)
+        print(nome_arq)
+        print(num_repl)        
+        socket_send_str(self.s, nome_arq)
+        socket_send_int(self.s, streamFile.fileSize)
+        socket_send_int(self.s, num_repl)
+        for i in streamFile:
+            self.s.send(streamFile.send_next(i))
+        self.shtdnw_close()
+
         
 

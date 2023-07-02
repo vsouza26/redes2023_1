@@ -151,6 +151,79 @@ class ServerSocket():
             return
         self.remover_registro(nome_arq)
 
+    def mod_cmd(self,c):
+        
+        nome_arq = socket_recv_str(c) 
+        tam_arq = socket_rect_int(c)
+        num_repl = socket_rect_int(c)
+
+        #if not self.existe_em_registro(nome_arq):
+        #    self.close_connection(c)
+        #    print("Ok1")
+        #    return
+        
+        self.remover_registro(nome_arq)
+
+       
+        if len(self.minion_list) == 0:
+            print("Sem minions disponíveis")
+            self.close_connection(c)
+            return
+        
+        if self.existe_em_registro_e_minion_online(nome_arq):
+            self.close_connection(c)
+            print("Existe em registro")
+            return
+
+        minion_msg = [self._addcmd]
+        minion_msg.append(nome_arq)
+        minion_msg.append(tam_arq)
+        pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam_arq)
+        
+        if len(self.minion_list) <= num_repl:
+            process_list = [Process(target=self.send_header_to_minion, args=(minion_msg,m)) for (hs,m) in self.minion_list]
+            registro = f"{nome_arq},"
+            for (hs,m) in self.minion_list:
+                registro = registro + hs + ","
+            registro = registro + "\n"
+            self.reg_list.seek(0, 2)
+            self.reg_list.write(registro.encode('ascii'))
+            for p in process_list:
+                p.start()
+            for p in process_list:
+                p.join()
+            for j in pipe:
+                msg = c.recv(j)
+                print(f"Mensagem do client: {msg}")
+                #SEND STREAM 
+                process_list = [Process(target=self.send_to_minion, args=(msg,m)) for (hs,m) in self.minion_list]
+                for p in process_list:
+                    p.start()
+                for p in process_list:
+                    p.join()
+        else:
+            servers_list = [] 
+            for i in range(0,num_repl):
+                servers_list.append(self.minion_list[self.round_robin])
+                self.round_robin = (self.round_robin + 1)%len(self.minion_list)
+            registro = f"{nome_arq},"
+            for (hs,m) in servers_list:
+                registro = registro + hs + ","
+                p = Process(target=self.send_header_to_minion, args=(minion_msg,m))
+                p.start()
+            registro = registro + "\n"
+            self.reg_list.write(registro.encode('ascii'))
+            for (hs,m) in servers_list:
+                p.join()
+            for j in pipe:
+                msg = c.recv(j)
+                for (hs,m) in servers_list:
+                    p = Process(target=self.send_to_minion, args=(msg,m))
+                    p.start()
+                for (hs,m) in servers_list:
+                    p.join()
+
+
     def remover_registro(self, nome_arq:str, decoder:str = 'ascii'):
         try:
             TempFileName = 'temp.txt'
@@ -264,6 +337,8 @@ class ServerSocket():
                     self.rem_cmd(c)
                 if fmsg == self._reccmd:
                     self.rec_cmd(c)
+                if fmsg == self._modcmd:
+                    self.mod_cmd(c)
 
 
 

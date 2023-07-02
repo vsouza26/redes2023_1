@@ -67,6 +67,10 @@ class MinionSocket():
                 elif cmd == self._reccmd:
                     print("Comando de recuperar recebido")
                     self.rec_cmd()
+                elif cmd == self._modcmd:
+                    print("mod command received")
+                    self.RemoveCommand()
+                    self.add_cmd()
                 else:
                     raise MinionSocketError(2)
             except MinionSocketError as e:
