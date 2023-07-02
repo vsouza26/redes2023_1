@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  master:
+    container_name: "master"
+    build: ./master_sim/
+    volumes:
+        - "./master_sim/:/opt/"
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    ports: 
+      - "8189:8189"
+  minion:
+    build: ./minion_sim/
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    depends_on:
+      - master
+    deploy:
+      replicas: 2
