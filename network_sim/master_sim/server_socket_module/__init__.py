@@ -154,8 +154,18 @@ class ServerSocket():
     def mod_cmd(self,c):
         
         nome_arq = socket_recv_str(c) 
-        tam_arq = socket_rect_int(c)
         num_repl = socket_rect_int(c)
+
+        minion = self.existe_em_registro_e_minion_online(nome_arq)
+
+        minion_name = minion[0]
+        minion_socket = minion[1]
+
+        header_msg = [self._reccmd,nome_arq]
+        self.send_header_to_minion(header_msg, minion_socket)
+        tam = socket_rect_int(minion_socket)
+        socket_send_int(c, tam)
+        pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam)
 
         #if not self.existe_em_registro(nome_arq):
         #    self.close_connection(c)
@@ -177,9 +187,8 @@ class ServerSocket():
 
         minion_msg = [self._addcmd]
         minion_msg.append(nome_arq)
-        minion_msg.append(tam_arq)
-        pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam_arq)
-        
+        minion_msg.append(tam)
+        #pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam_arq)
         if len(self.minion_list) <= num_repl:
             process_list = [Process(target=self.send_header_to_minion, args=(minion_msg,m)) for (hs,m) in self.minion_list]
             registro = f"{nome_arq},"
