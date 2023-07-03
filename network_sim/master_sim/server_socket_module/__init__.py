@@ -157,20 +157,18 @@ class ServerSocket():
         num_repl = socket_rect_int(c)
 
         minion = self.existe_em_registro_e_minion_online(nome_arq)
-
         minion_name = minion[0]
         minion_socket = minion[1]
+        print(minion_socket)
+        if(not minion):
+            self.close_connection(c)
+            return
 
         header_msg = [self._reccmd,nome_arq]
         self.send_header_to_minion(header_msg, minion_socket)
         tam = socket_rect_int(minion_socket)
-        socket_send_int(c, tam)
         pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam)
 
-        #if not self.existe_em_registro(nome_arq):
-        #    self.close_connection(c)
-        #    print("Ok1")
-        #    return
         
         self.remover_registro(nome_arq)
 
@@ -323,9 +321,19 @@ class ServerSocket():
         p.start()
         p.join()
 
-    def GetFileFromMinion(self):
-        print()
+    def GetFileFromMinion(self, c:socket,  nome_arq:str, minion_name:str,  minion_socket:socket):
 
+        header_msg = [self._reccmd,nome_arq]
+        self.send_header_to_minion(header_msg, minion_socket)
+        tam = socket_rect_int(minion_socket)
+        socket_send_int(c, tam)
+        sh = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam)
+        self.RemoveFile(nome_arq, minion_name)
+        for i in sh:
+            c.send(minion_socket.recv(i))
+            self.remover_copia_registroF(nome_arq)
+
+    
     def start_server(self):
         self.s.listen(0)
         with Manager() as manager:
