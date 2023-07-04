@@ -24,6 +24,12 @@ class ServerSocket():
             self.reg_list = open("./.registerlist", "r+b")
         except FileNotFoundError:
             self.reg_list = open("./.registerlist", "w+b")
+        try:
+            os.mkdir(f"./.temp")
+        except FileExistsError as e:
+            pass
+        except Exception as e:
+            raise e
         self.s = socket.create_server((ip,porta), family=socket.AF_INET)
         self.num_repl = 0 
         self.round_robin = 0
@@ -152,34 +158,32 @@ class ServerSocket():
         self.remover_registro(nome_arq)
 
     def mod_cmd(self,c):
-        
-        nome_arq = socket_recv_str(c) 
-        tam_arq = socket_rect_int(c)
-        num_repl = socket_rect_int(c)
-
-        #if not self.existe_em_registro(nome_arq):
-        #    self.close_connection(c)
-        #    print("Ok1")
-        #    return
-        
-        self.remover_registro(nome_arq)
-
-       
         if len(self.minion_list) == 0:
             print("Sem minions disponíveis")
             self.close_connection(c)
             return
-        
-        if self.existe_em_registro_e_minion_online(nome_arq):
+        nome_arq = socket_recv_str(c) 
+        num_repl = socket_rect_int(c)
+        minion = self.existe_em_registro_e_minion_online(nome_arq)
+        if(not minion):
             self.close_connection(c)
-            print("Existe em registro")
             return
-
+        minion_name = minion[0]
+        minion_socket = minion[1]
+        header_msg = [self._reccmd,nome_arq]
+        self.send_header_to_minion(header_msg, minion_socket)
+        tam = socket_rect_int(minion_socket)
+        consumer = StreamHandler(caminho=f"./.temp/temp",streamType=StreamType.Consumer, tam_arq=tam)
+        #Guarda o arquivo no master temporariamente
+        for i in consumer:
+            msg = minion_socket.recv(i)
+            consumer.consume_next(msg, i) 
+        #Pega o arquivo temporário para criar uma stream
+        generator = StreamHandler(caminho=f"./.temp/temp",streamType=StreamType.Generator, tam_arq=tam)
+        self.remover_registro(nome_arq)
         minion_msg = [self._addcmd]
         minion_msg.append(nome_arq)
-        minion_msg.append(tam_arq)
-        pipe = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam_arq)
-        
+        minion_msg.append(tam)
         if len(self.minion_list) <= num_repl:
             process_list = [Process(target=self.send_header_to_minion, args=(minion_msg,m)) for (hs,m) in self.minion_list]
             registro = f"{nome_arq},"
@@ -192,8 +196,8 @@ class ServerSocket():
                 p.start()
             for p in process_list:
                 p.join()
-            for j in pipe:
-                msg = c.recv(j)
+            for j in generator:
+                msg = generator.send_next(j)
                 print(f"Mensagem do client: {msg}")
                 #SEND STREAM 
                 process_list = [Process(target=self.send_to_minion, args=(msg,m)) for (hs,m) in self.minion_list]
@@ -215,13 +219,15 @@ class ServerSocket():
             self.reg_list.write(registro.encode('ascii'))
             for (hs,m) in servers_list:
                 p.join()
-            for j in pipe:
-                msg = c.recv(j)
+            for j in generator:
+                msg = generator.send_next(j)
                 for (hs,m) in servers_list:
                     p = Process(target=self.send_to_minion, args=(msg,m))
                     p.start()
                 for (hs,m) in servers_list:
                     p.join()
+        #apaga arquivo temporario
+        os.remove("./.temp/temp")
 
 
     def remover_registro(self, nome_arq:str, decoder:str = 'ascii'):
@@ -230,12 +236,23 @@ class ServerSocket():
             self.reg_list.seek(0)
             with open(TempFileName, 'wb') as TempFile:
                 for line in self.reg_list:
-                    nome_registro = line.decode(decoder).split(",")[0]
+                    linha_de_minions = line.decode(decoder).split(",")
+                    nome_registro = linha_de_minions[0]
                     if nome_registro != nome_arq:
                         TempFile.write(line)
+                    else:
+                        for i in linha_de_minions:
+                            if nome_arq != i:
+                                for j in self.minion_list:
+                                    print(f'Comparando {i} com {j[0]}')
+                                    if j[0] == i:
+                                        header_msg = [self._rmcmd, nome_arq]
+                                        self.send_header_to_minion(header_msg, j[1]) 
+
+                                
+
         except:
             print('a')
-    
         self.mudar_reglist(TempFileName)
 
     def rec_cmd(self,c):
@@ -314,9 +331,19 @@ class ServerSocket():
         p.start()
         p.join()
 
-    def GetFileFromMinion(self):
-        print()
+    def GetFileFromMinion(self, c:socket,  nome_arq:str, minion_name:str,  minion_socket:socket):
 
+        header_msg = [self._reccmd,nome_arq]
+        self.send_header_to_minion(header_msg, minion_socket)
+        tam = socket_rect_int(minion_socket)
+        socket_send_int(c, tam)
+        sh = StreamHandler(streamType=StreamType.Pipe, tam_arq=tam)
+        self.RemoveFile(nome_arq, minion_name)
+        for i in sh:
+            c.send(minion_socket.recv(i))
+            self.remover_copia_registroF(nome_arq)
+
+    
     def start_server(self):
         self.s.listen(0)
         with Manager() as manager:

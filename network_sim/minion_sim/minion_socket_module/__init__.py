@@ -34,8 +34,8 @@ class MinionSocket():
         self.c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def close_connection(self,c:socket):
-        c.shutdown(socket.SHUT_RDWR)
-        c.close()
+        self.c.shutdown(socket.SHUT_RDWR)
+        self.c.close()
 
     def add_cmd(self) -> None:
         try:
@@ -48,6 +48,8 @@ class MinionSocket():
                 print(msg)
                 consumer.consume_next(msg, i) 
         except StreamError as e:
+            self.close_connection(self.c)
+            self.connect_to_master()
             print(e)
 
     def start_connection(self) -> None:
@@ -92,13 +94,23 @@ class MinionSocket():
         socket_send_int(self.c, sh.fileSize)
         for i in sh:
             self.c.send(sh.send_next(i))
+        try:
+            os.remove(f'./.{self.diretorio}/{nome_arq}')
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            print(e)
+            raise e
 
     def RemoveCommand(self):
         try:
             nome_arq = socket_recv_str(self.c)
             os.remove(f'./.{self.diretorio}/{nome_arq}')
-        except:
-            print("deu merda aqui")
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            print(e)
+            raise e
 
 
 
