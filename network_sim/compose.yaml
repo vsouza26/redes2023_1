@@ -3,8 +3,6 @@ services:
   master:
     container_name: "master"
     build: ./master_sim/
-    volumes:
-        - "./master_sim/:/opt/"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     ports: 
