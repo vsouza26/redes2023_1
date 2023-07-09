@@ -31,7 +31,6 @@ class ServerSocket():
         except Exception as e:
             raise e
         self.s = socket.create_server((ip,porta), family=socket.AF_INET)
-        self.num_repl = 0 
         self.round_robin = 0
 
     def close_connection(self,c:socket):
