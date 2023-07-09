@@ -273,22 +273,6 @@ class ServerSocket():
                 c.send(minion_socket.recv(i))
             self.remover_copia_registroF(nome_arq)
 
-   
-    def remover_copia_registro(self, nome_arq:str, minion_name:str, encoder:str = 'ascii'):
-        self.reg_list.seek(0)
-        while True:
-            line = self.reg_list.readline()
-            line = line.decode("ascii")
-            line = line.split(",")
-            print(line)
-            if minion_name == line[0]:
-                new_line = f"{line[0]},"
-                for host_name in line:
-                    if host_name != minion_name:
-                        new_line += f"{host_name},"
-                self.reg_list.write(new_line.encode('ascii'))
-                return
-
     def remover_copia_registroF(self, nome_arq:str, encoder:str = 'ascii'):
         try:
             TempFileName = './temp.txt'
@@ -315,11 +299,6 @@ class ServerSocket():
         os.remove('./.registerlist')
         os.rename(novo_nome, './.registerlist')
         self.reg_list = open("./.registerlist", "a+b")
-
-    def Enviar_Client(self, nome_arq:str, minion_socket:socket):
-        FileNamesEncoded = FileName.encode(encoder)
-        msg = [self._reccmd,len(FileNamesEncoded),FileNamesEncoded]
-        self.send_header_to_minion(msg, m)
 
     def RemoveFile(self, FileName, MinionName, encoder = 'ascii'):
         MinionSocket = [item for item in self.minion_list if item[0] == MinionName][0][1]
