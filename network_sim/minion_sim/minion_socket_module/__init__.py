@@ -33,7 +33,7 @@ class MinionSocket():
         self.addr = (ip,porta)
         self.c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def close_connection(self,c:socket):
+    def close_connection(self):
         self.c.shutdown(socket.SHUT_RDWR)
         self.c.close()
 
